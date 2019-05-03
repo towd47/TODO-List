@@ -34,10 +34,13 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
         
         populateSavedItems()
         
+        let nc = NotificationCenter.default
+        nc.addObserver(self, selector: #selector(openRefresh), name: Notification.Name("OpenedApp"), object: nil)
     }
     
-    override func viewDidAppear(_ animated: Bool) {
-        UIApplication.shared.applicationIconBadgeNumber = 0
+    @objc func openRefresh() {
+        sort()
+        todoTable.reloadData()
     }
     
     func populateSavedItems() {
@@ -219,7 +222,7 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
     }
     
     func displayCreatedReminderConfimation() {
-        let alert = UIAlertController(title: "Created Reminder for \(String(describing: itemToMakeReminderFor!.itemName))", message: "", preferredStyle: .alert)
+        let alert = UIAlertController(title: "Created Reminder for: \(String(describing: itemToMakeReminderFor!.itemName))", message: "", preferredStyle: .alert)
         
         let when = DispatchTime.now() + 1
         DispatchQueue.main.asyncAfter(deadline: when) {
@@ -429,6 +432,7 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
         savedItem.setValue(item.date, forKey: "date")
         savedItem.setValue(item.priority.value(), forKey: "priority")
         savedItem.setValue(item.itemDescription, forKey: "itemDescription")
+        savedItem.setValue(itemHash(item), forKey: "uniqueID")
         
         do {
             savedItems.append(savedItem)
@@ -446,6 +450,7 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
         savedItem.setValue(item.date, forKey: "date")
         savedItem.setValue(item.priority.value(), forKey: "priority")
         savedItem.setValue(item.itemDescription, forKey: "itemDescription")
+        savedItem.setValue(itemHash(item), forKey: "uniqueID")
         
         do {
             try managedContext!.save()
@@ -461,5 +466,17 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
         } catch let error as NSError {
             print("Could not save. \(error), \(error.userInfo)")
         }
+    }
+    
+    func itemHash(_ item: TODOListItem) -> String {
+        let hash = "\(item.itemName), \(item.itemDescription), \(item.date.description), \(item.priority)"
+        
+        return hash
+    }
+    
+    // Refresh method
+    
+    func refresh() {
+        todoTable.reloadData()
     }
 }

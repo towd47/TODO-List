@@ -48,6 +48,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func applicationDidBecomeActive(_ application: UIApplication) {
         // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+        UIApplication.shared.applicationIconBadgeNumber = 0
+        
+        let nc = NotificationCenter.default
+        nc.post(name: Notification.Name("OpenedApp"), object: nil)
+        
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
@@ -57,20 +62,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
     
     private func registerNotificationCategory(){
-        let newCatagory: UNNotificationCategory = {
-            let viewAction = UNTextInputNotificationAction(identifier: NotificationCategoryAction.view.rawValue, title: "View", options: [.foreground], textInputButtonTitle: "Send", textInputPlaceholder: "Leave what you want to say")
+        let completeCategory: UNNotificationCategory = {
             
             let completeAction = UNNotificationAction(identifier: NotificationCategoryAction.complete.rawValue, title: "Complete", options: [.foreground])
             
             
-            return UNNotificationCategory(identifier: NotificationCategory.news.rawValue, actions: [viewAction,completeAction], intentIdentifiers: [], options: [.customDismissAction])
+            return UNNotificationCategory(identifier: NotificationCategory.completeCategory.rawValue, actions: [completeAction], intentIdentifiers: [], options: [.customDismissAction])
         }()
         
-        let reveal = UNNotificationAction(identifier: "reveal", title: "Reveal", options: [.foreground])
-        
-        let pokemonCategory = UNNotificationCategory(identifier: "POKEMON", actions: [reveal], intentIdentifiers: [], options: [])
-        
-        UNUserNotificationCenter.current().setNotificationCategories([newCatagory, pokemonCategory])
+        UNUserNotificationCenter.current().setNotificationCategories([completeCategory])
     }
 
     // MARK: - Core Data stack

@@ -28,6 +28,8 @@ class ReminderViewController: UIViewController, UITextFieldDelegate {
         success = true
         failed = false
         
+        title = "Set Reminder"
+        
         itemNameLabel.text = item?.itemName
         itemDateLabel.text = formateDate(item!.date)
         descriptionTextView.text = item?.itemDescription
@@ -85,6 +87,7 @@ class ReminderViewController: UIViewController, UITextFieldDelegate {
         content.body = ""
         content.badge = 1
         content.sound = UNNotificationSound.default
+        content.categoryIdentifier = "completeCategory"
         
         let interval = datePicker?.date.timeIntervalSinceNow
         
@@ -92,7 +95,7 @@ class ReminderViewController: UIViewController, UITextFieldDelegate {
         
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval!, repeats: false)
             
-            let request = UNNotificationRequest(identifier: item!.itemName, content: content, trigger: trigger)
+            let request = UNNotificationRequest(identifier: itemHash(item!), content: content, trigger: trigger)
             UNUserNotificationCenter.current().add(request) { error in
                 if error == nil {
                     print("Notification Scheduled")
@@ -121,5 +124,11 @@ class ReminderViewController: UIViewController, UITextFieldDelegate {
         else {
             fatalError("The ItemViewController is not inside a navigation controller.")
         }
+    }
+    
+    func itemHash(_ item: TODOListItem) -> String {
+        let hash = "\(item.itemName), \(item.itemDescription), \(item.date.description), \(item.priority)"
+        
+        return hash
     }
 }

@@ -13,7 +13,6 @@ class TODOItemViewCell: UITableViewCell {
     @IBOutlet weak var itemNameLabel: UILabel!
     @IBOutlet weak var priorityLabel: UILabel!
     @IBOutlet weak var dateLabel: UILabel!
-    var item: TODOListItem?
     
     override func awakeFromNib() {
         super.awakeFromNib()

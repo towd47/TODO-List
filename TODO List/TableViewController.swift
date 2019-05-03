@@ -21,8 +21,12 @@ class TableViewController: UIViewController, UITableViewDataSource {
         
         title = "TODO List"
         
-        self.navigationItem.leftBarButtonItem = self.editButtonItem
+        todoTable.rowHeight = 90;
         
+        populateSavedItems()
+    }
+    
+    func populateSavedItems() {
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
             return
         }
@@ -45,43 +49,40 @@ class TableViewController: UIViewController, UITableViewDataSource {
             print("Could not fetch. \(error), \(error.userInfo)")
         }
         
+        sortByPriority()
     }
     
-    func saveItem(item: TODOListItem) {
-        let entity = NSEntityDescription.entity(forEntityName: "TODO_Item", in: managedContext!)!
-        
-        let savedItem = NSManagedObject(entity: entity, insertInto: managedContext)
-        
-        savedItem.setValue(item.itemName, forKeyPath: "name")
-        savedItem.setValue(item.date, forKey: "date")
-        savedItem.setValue(item.priority.value(), forKey: "priority")
-        savedItem.setValue(item.itemDescription, forKey: "itemDescription")
-        
-        do {
-            savedItems.append(savedItem)
-            try managedContext!.save()
-            print("saved")
-        } catch let error as NSError {
-            print("Could not save. \(error), \(error.userInfo)")
+    // List Sorting
+    
+    func sortByPriority() {
+        savedItems.sort {
+            let item0 = itemFromNSManagedObject($0)!
+            let item1 = itemFromNSManagedObject($1)!
+            
+            if (item0.priority == item1.priority) {
+                return item0.date < item1.date
+            }
+            else {
+                return item0.priority.value() > item1.priority.value()
+            }
         }
     }
     
-    func updateItem(atRow row: Int, item: TODOListItem) {
-        
-        let savedItem = savedItems[row]
-        
-        savedItem.setValue(item.itemName, forKeyPath: "name")
-        savedItem.setValue(item.date, forKey: "date")
-        savedItem.setValue(item.priority.value(), forKey: "priority")
-        savedItem.setValue(item.itemDescription, forKey: "itemDescription")
-        
-        do {
-            try managedContext!.save()
-            print("saved")
-        } catch let error as NSError {
-            print("Could not save. \(error), \(error.userInfo)")
+    func sortByDate() {
+        savedItems.sort {
+            let item0 = itemFromNSManagedObject($0)!
+            let item1 = itemFromNSManagedObject($1)!
+            
+            if (item0.date == item1.date) {
+                return item0.priority.value() > item1.priority.value()
+            }
+            else {
+                return item0.date < item1.date
+            }
         }
     }
+    
+    // Table functions
     
     func tableView(_ tableView: UITableView,
                    numberOfRowsInSection section: Int) -> Int {
@@ -100,10 +101,17 @@ class TableViewController: UIViewController, UITableViewDataSource {
             dateFormatter.dateFormat = "MM/dd/yyyy"
             
             cell.itemNameLabel.text = item.itemName
-            cell.dateLabel.text = dateFormatter.string(from: item.date)
-            cell.priorityLabel.text = item.priority.name()
-            cell.item = item
             
+            cell.dateLabel.text = dateFormatter.string(from: item.date)
+            cell.dateLabel.backgroundColor = colorForDate(item.date)
+            cell.dateLabel.layer.borderColor = UIColor.darkGray.cgColor
+            cell.dateLabel.layer.borderWidth = 1
+            
+            cell.priorityLabel.text = item.priority.name()
+            cell.priorityLabel.backgroundColor = colorForPriority(item.priority)
+            cell.priorityLabel.layer.borderColor = UIColor.darkGray.cgColor
+            cell.priorityLabel.layer.borderWidth = 1
+                        
             return cell
         }
         fatalError("faild getting item from managedObject")
@@ -116,6 +124,36 @@ class TableViewController: UIViewController, UITableViewDataSource {
             tableView.deleteRows(at: [indexPath], with: .fade)
         }
     }
+    
+    func colorForDate(_ date: Date) -> UIColor {
+        let todayDate = Date.init()
+        let components = Calendar.current.dateComponents([.day], from: todayDate, to: date)
+        
+        var color: UIColor
+        
+        if components.day! < 3 {
+            color = UIColor.init(red: 1, green: 0, blue: 0, alpha: 0.7)
+        } else if components.day! < 7 {
+            color = UIColor.init(red: 1, green: 1, blue: 0, alpha: 0.7)
+        } else {
+            color = UIColor.init(red: 0, green: 1, blue: 0, alpha: 0.7)
+        }
+        return color
+    }
+    
+    func colorForPriority(_ priority: Priority) -> UIColor {
+        var color: UIColor
+        if (priority.value() == 2) {
+            color = UIColor.init(red: 1, green: 0, blue: 0, alpha: 0.7)
+        } else if (priority.value() == 1) {
+            color = UIColor.init(red: 1, green: 1, blue: 0, alpha: 0.7)
+        } else {
+            color = UIColor.init(red: 0, green: 1, blue: 0, alpha: 0.7)
+        }
+        return color
+    }
+    
+    // Segue Functions
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         super.prepare(for: segue, sender: sender)
@@ -163,6 +201,8 @@ class TableViewController: UIViewController, UITableViewDataSource {
         }
     }
     
+    // Core data functions
+    
     func itemFromNSManagedObject(_ nsObject: NSManagedObject) -> TODOListItem? {
         
         guard let itemName = nsObject.value(forKey: "name") as? String else {
@@ -175,6 +215,42 @@ class TableViewController: UIViewController, UITableViewDataSource {
         let priority = nsObject.primitiveValue(forKey: "priority") as! Int
         
         return TODOListItem.init(itemName: itemName, itemDescription: itemDescription, priorityInt: priority, date: date)
+    }
+    
+    func saveItem(item: TODOListItem) {
+        let entity = NSEntityDescription.entity(forEntityName: "TODO_Item", in: managedContext!)!
+        
+        let savedItem = NSManagedObject(entity: entity, insertInto: managedContext)
+        
+        savedItem.setValue(item.itemName, forKeyPath: "name")
+        savedItem.setValue(item.date, forKey: "date")
+        savedItem.setValue(item.priority.value(), forKey: "priority")
+        savedItem.setValue(item.itemDescription, forKey: "itemDescription")
+        
+        do {
+            savedItems.append(savedItem)
+            try managedContext!.save()
+            print("saved")
+        } catch let error as NSError {
+            print("Could not save. \(error), \(error.userInfo)")
+        }
+    }
+    
+    func updateItem(atRow row: Int, item: TODOListItem) {
+        
+        let savedItem = savedItems[row]
+        
+        savedItem.setValue(item.itemName, forKeyPath: "name")
+        savedItem.setValue(item.date, forKey: "date")
+        savedItem.setValue(item.priority.value(), forKey: "priority")
+        savedItem.setValue(item.itemDescription, forKey: "itemDescription")
+        
+        do {
+            try managedContext!.save()
+            print("saved")
+        } catch let error as NSError {
+            print("Could not save. \(error), \(error.userInfo)")
+        }
     }
     
     func deleteNSManagedObject(_ nsObject: NSManagedObject, context: NSManagedObjectContext) {

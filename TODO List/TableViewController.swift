@@ -315,8 +315,9 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
         
         if isCompleted {
             color = UIColor.init(red: 0, green: 0, blue: 1, alpha: 0.5)
-        }
-        else if components.day! < 3 {
+        } else if components.day! < 0 {
+            color = UIColor.init(red: 1, green: 0, blue: 0, alpha: 1)
+        } else if components.day! < 3 {
             color = UIColor.init(red: 1, green: 0, blue: 0, alpha: 0.5)
         } else if components.day! < 7 {
             color = UIColor.init(red: 1, green: 1, blue: 0, alpha: 0.45)

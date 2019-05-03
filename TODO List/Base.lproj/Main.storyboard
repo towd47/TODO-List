@@ -73,6 +73,7 @@
                             <constraint firstItem="5Hd-Bq-IrW" firstAttribute="centerX" secondItem="zir-Lq-QLP" secondAttribute="centerX" id="5YV-hj-r78"/>
                             <constraint firstItem="eyL-ej-aSK" firstAttribute="height" secondItem="zir-Lq-QLP" secondAttribute="height" id="6iK-tU-JLk"/>
                             <constraint firstItem="Tzs-Yn-MWy" firstAttribute="top" secondItem="zir-Lq-QLP" secondAttribute="bottom" constant="20" id="Bra-aI-G2v"/>
+                            <constraint firstItem="ENx-Tg-ccT" firstAttribute="width" secondItem="va9-Gd-JoY" secondAttribute="width" id="CQD-i5-zT3"/>
                             <constraint firstItem="ENx-Tg-ccT" firstAttribute="top" secondItem="88Q-8F-lAk" secondAttribute="top" constant="30" id="DOW-rC-k1T"/>
                             <constraint firstItem="OM1-8U-DUf" firstAttribute="centerX" secondItem="eyL-ej-aSK" secondAttribute="centerX" id="FvD-KH-YuW"/>
                             <constraint firstItem="eyL-ej-aSK" firstAttribute="top" secondItem="5Hd-Bq-IrW" secondAttribute="bottom" constant="30" id="KKW-TH-cmh"/>
@@ -82,7 +83,6 @@
                             <constraint firstItem="zir-Lq-QLP" firstAttribute="height" secondItem="ENx-Tg-ccT" secondAttribute="height" id="dYs-pi-Kqm"/>
                             <constraint firstItem="eyL-ej-aSK" firstAttribute="centerX" secondItem="zir-Lq-QLP" secondAttribute="centerX" id="fv6-uy-taf"/>
                             <constraint firstItem="zir-Lq-QLP" firstAttribute="top" secondItem="ENx-Tg-ccT" secondAttribute="bottom" constant="30" id="jLr-cw-F8r"/>
-                            <constraint firstItem="88Q-8F-lAk" firstAttribute="trailing" secondItem="ENx-Tg-ccT" secondAttribute="trailing" id="qqi-9g-c2h"/>
                             <constraint firstItem="ENx-Tg-ccT" firstAttribute="leading" secondItem="88Q-8F-lAk" secondAttribute="leading" id="r2H-6O-VZc"/>
                             <constraint firstItem="Tzs-Yn-MWy" firstAttribute="centerX" secondItem="zir-Lq-QLP" secondAttribute="centerX" id="sW7-kJ-Ndx"/>
                             <constraint firstItem="OM1-8U-DUf" firstAttribute="height" secondItem="eyL-ej-aSK" secondAttribute="height" id="vEE-up-8gT"/>
@@ -369,27 +369,8 @@
             </objects>
             <point key="canvasLocation" x="2986" y="513"/>
         </scene>
-        <!--Navigation Controller-->
-        <scene sceneID="U5P-7W-pCQ">
-            <objects>
-                <navigationController automaticallyAdjustsScrollViewInsets="NO" id="yut-7B-J5Q" sceneMemberID="viewController">
-                    <toolbarItems/>
-                    <navigationBar key="navigationBar" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" id="Lns-f4-0so">
-                        <rect key="frame" x="0.0" y="44" width="414" height="44"/>
-                        <autoresizingMask key="autoresizingMask"/>
-                    </navigationBar>
-                    <nil name="viewControllers"/>
-                    <connections>
-                        <segue destination="mxw-L4-r69" kind="relationship" relationship="rootViewController" id="HQo-SS-kBH"/>
-                    </connections>
-                </navigationController>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="ZxP-nT-CYu" userLabel="First Responder" sceneMemberID="firstResponder"/>
-            </objects>
-            <point key="canvasLocation" x="1904" y="-604"/>
-        </scene>
     </scenes>
     <inferredMetricsTieBreakers>
         <segue reference="BgV-17-rx9"/>
-        <segue reference="gOw-eB-XYF"/>
     </inferredMetricsTieBreakers>
 </document>

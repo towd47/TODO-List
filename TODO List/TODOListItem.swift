@@ -30,6 +30,12 @@ class TODOListItem {
     convenience init?(itemName: String, itemDescription: String, priorityInt: Int, date: Date) {
         self.init(itemName: itemName, itemDescription: itemDescription, priority: Priority.init(rawValue: priorityInt)!, date: date)
     }
+    
+    func uniqueIdentifier() -> String {
+        let uniqueID = "\(itemName), \(itemDescription), \(date.description), \(priority)"
+        
+        return uniqueID
+    }
 }
 
 enum Priority: Int {

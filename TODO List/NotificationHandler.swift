@@ -22,11 +22,6 @@ enum NotificationCategoryAction: String {
 
 class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
     
-    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        
-        completionHandler([.alert, .sound])
-    }
-    
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler:
@@ -72,37 +67,6 @@ class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
             case .view:
                 print("view")
             }
-        }
-    }
-    
-    func itemHash(_ item: TODOListItem) -> String {
-        let hash = "\(item.itemName), \(item.itemDescription), \(item.date.description), \(item.priority)"
-        
-        return hash
-    }
-    
-    private func handleNews(response: UNNotificationResponse) {
-        let message: String
-        
-        if let actionType = NotificationCategoryAction(rawValue: response.actionIdentifier) {
-            switch actionType {
-            case .complete: message = "You choose Vote!"
-            case .view: message = "You choose Cancel!"
-            }
-        } else {
-            message = ""
-        }
-        
-        if !message.isEmpty {
-            showAlert(message: message)
-        }
-    }
-    
-    private func showAlert(message: String) {
-        if let vc = UIApplication.shared.keyWindow?.rootViewController {
-            let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "OK", style: .cancel))
-            vc.present(alert, animated: true)
         }
     }
 }

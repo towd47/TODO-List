@@ -18,7 +18,7 @@ class ReminderViewController: UIViewController, UITextFieldDelegate {
     @IBOutlet weak var setReminderButton: UIBarButtonItem!
     
     var success: Bool?
-    var failed: Bool?
+    var selectedNotificationTimeIsInThePast: Bool?
     private var datePicker: UIDatePicker?
     
     var item: TODOListItem?
@@ -26,12 +26,12 @@ class ReminderViewController: UIViewController, UITextFieldDelegate {
     override func viewDidLoad() {
         
         success = true
-        failed = false
+        selectedNotificationTimeIsInThePast = false
         
         title = "Set Reminder"
         
         itemNameLabel.text = item?.itemName
-        itemDateLabel.text = formateDate(item!.date)
+        itemDateLabel.text = DateAndTimeDateFormatter.formateDateWithTime(item!.date)
         descriptionTextView.text = item?.itemDescription
         
         
@@ -42,7 +42,7 @@ class ReminderViewController: UIViewController, UITextFieldDelegate {
         datePicker?.addTarget(self, action: #selector(ItemViewController.dateChanged(datePicker:)), for: .valueChanged)
         datePicker?.minimumDate = Date()
         
-        dateField.text = formateDate(datePicker!.date)
+        dateField.text = DateAndTimeDateFormatter.formateDateWithTime(datePicker!.date)
         
         dateField.inputView = datePicker
         
@@ -59,14 +59,7 @@ class ReminderViewController: UIViewController, UITextFieldDelegate {
     
     @objc func dateChanged(datePicker: UIDatePicker) {
         
-        dateField.text = formateDate(datePicker.date)
-    }
-    
-    func formateDate(_ date: Date) -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "hh:mma - MMMM d, yyyy"
-        
-        return dateFormatter.string(from: date)
+        dateField.text = DateAndTimeDateFormatter.formateDateWithTime(datePicker.date)
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
@@ -83,7 +76,7 @@ class ReminderViewController: UIViewController, UITextFieldDelegate {
     func createReminder() {
         let content = UNMutableNotificationContent();
         content.title = item!.itemName
-        content.subtitle = "Scheduled for: \(formateDate(item!.date))"
+        content.subtitle = "Scheduled for: \(DateAndTimeDateFormatter.formateDateWithTime(item!.date))"
         content.body = ""
         content.badge = 1
         content.sound = UNNotificationSound.default
@@ -95,7 +88,7 @@ class ReminderViewController: UIViewController, UITextFieldDelegate {
         
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval!, repeats: false)
             
-            let request = UNNotificationRequest(identifier: itemHash(item!), content: content, trigger: trigger)
+            let request = UNNotificationRequest(identifier: item!.uniqueIdentifier(), content: content, trigger: trigger)
             UNUserNotificationCenter.current().add(request) { error in
                 if error == nil {
                     print("Notification Scheduled")
@@ -107,7 +100,7 @@ class ReminderViewController: UIViewController, UITextFieldDelegate {
         }
         else {
             success = false
-            failed = true
+            selectedNotificationTimeIsInThePast = true
         }
     }
     
@@ -124,11 +117,5 @@ class ReminderViewController: UIViewController, UITextFieldDelegate {
         else {
             fatalError("The ItemViewController is not inside a navigation controller.")
         }
-    }
-    
-    func itemHash(_ item: TODOListItem) -> String {
-        let hash = "\(item.itemName), \(item.itemDescription), \(item.date.description), \(item.priority)"
-        
-        return hash
     }
 }

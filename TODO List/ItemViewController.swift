@@ -25,6 +25,16 @@ class ItemViewController: UIViewController, UITextFieldDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
                 
+        setUpUIObjects()
+        
+        if let item = item {
+            populateFromItem(item: item)
+        }
+        
+        addTapGesture()
+    }
+    
+    func setUpUIObjects() {
         descriptionTextView.layer.borderWidth = 1
         descriptionTextView.layer.borderColor = UIColor.lightGray.cgColor
         
@@ -36,27 +46,31 @@ class ItemViewController: UIViewController, UITextFieldDelegate {
         
         dateField.inputView = datePicker
         
-        if let item = item {
-            nameTextField.text = item.itemName
-            dateField.text = formateDate(item.date)
-            
-            var priorityVal = item.priority.value()
-            if priorityVal == -1 {
-                priorityVal = 3
-            }
-            prioritySelector.selectedSegmentIndex = priorityVal
-            
-            descriptionTextView.text = item.itemDescription
-            
-            datePicker?.setDate(item.date, animated: false)
-        }
+        nameTextField.delegate = self
+        updateSaveButtonState()
+    }
+    
+    func populateFromItem(item: TODOListItem) {
+        nameTextField.text = item.itemName
+        dateField.text = DateAndTimeDateFormatter.formateDateWithTime(item.date)
         
+        var priorityVal = item.priority.value()
+        if priorityVal == -1 {
+            priorityVal = 3
+        }
+        prioritySelector.selectedSegmentIndex = priorityVal
+        
+        descriptionTextView.text = item.itemDescription
+        
+        datePicker?.setDate(item.date, animated: false)
+        
+        updateSaveButtonState()
+    }
+    
+    func addTapGesture() {
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(ItemViewController.viewTapped(gestureRecognizer:)))
         
         view.addGestureRecognizer(tapGesture)
-        
-        nameTextField.delegate = self
-        updateSaveButtonState()
     }
     
     func textFieldDidEndEditing(_ textField: UITextField) {
@@ -70,7 +84,7 @@ class ItemViewController: UIViewController, UITextFieldDelegate {
     
     @objc func dateChanged(datePicker: UIDatePicker) {
         
-        dateField.text = formateDate(datePicker.date)
+        dateField.text = DateAndTimeDateFormatter.formateDateWithTime(datePicker.date)
     }
     
     private func updateSaveButtonState() {
@@ -99,13 +113,6 @@ class ItemViewController: UIViewController, UITextFieldDelegate {
         let date = datePicker?.date
         
         item = TODOListItem.init(itemName: name, itemDescription: itemDescription, priorityInt: priority, date: date!)
-    }
-    
-    func formateDate(_ date: Date) -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "hh:mma - MMMM d, yyyy"
-        
-        return dateFormatter.string(from: date)
     }
     
     @IBAction func cancel(_ sender: UIBarButtonItem) {

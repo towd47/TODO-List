@@ -17,8 +17,7 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
     @IBOutlet weak var sortButton: UIBarButtonItem!
     @IBOutlet weak var reminderSegue: UIButton!
     
-    var savedItems: [NSManagedObject] = []
-    var managedContext: NSManagedObjectContext?
+    var itemDataHandler: CoreDataHandler?
     var sortedBy: String = "Priority"
     var itemToMakeReminderFor: TODOListItem?
     
@@ -27,45 +26,19 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
         
         title = "TODO List"
         
+        itemDataHandler = CoreDataHandler.init()
+        sort()
+        
         todoTable.rowHeight = 90
         todoTable.delegate = self
         
         reminderSegue.isHidden = true
-        
-        populateSavedItems()
         
         let nc = NotificationCenter.default
         nc.addObserver(self, selector: #selector(openRefresh), name: Notification.Name("OpenedApp"), object: nil)
     }
     
     @objc func openRefresh() {
-        sort()
-        todoTable.reloadData()
-    }
-    
-    func populateSavedItems() {
-        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
-            return
-        }
-        
-        managedContext = appDelegate.persistentContainer.viewContext
-        
-        
-        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "TODO_Item")
-        fetchRequest.returnsObjectsAsFaults = false
-        
-        do {
-            savedItems = try managedContext!.fetch(fetchRequest)
-            for savedItem in savedItems {
-                if itemFromNSManagedObject(savedItem) == nil {
-                    deleteNSManagedObject(savedItem, context: managedContext!)
-                }
-            }
-            todoTable.reloadData()
-        } catch let error as NSError {
-            print("Could not fetch. \(error), \(error.userInfo)")
-        }
-        
         sort()
     }
     
@@ -83,62 +56,23 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
     }
     
     func sort() {
-        if sortedBy == "Priority" {
-            sortByPriority()
-        }
-        else {
-            sortByDate()
-        }
-        
+        itemDataHandler?.sort(sortedBy: sortedBy)
         todoTable.reloadData()
-    }
-    
-    func sortByPriority() {
-        savedItems.sort {
-            let item0 = itemFromNSManagedObject($0)!
-            let item1 = itemFromNSManagedObject($1)!
-            
-            if (item0.priority == item1.priority) {
-                return item0.date < item1.date
-            }
-            else {
-                return item0.priority.value() > item1.priority.value()
-            }
-        }
-    }
-    
-    func sortByDate() {
-        savedItems.sort {
-            let item0 = itemFromNSManagedObject($0)!
-            let item1 = itemFromNSManagedObject($1)!
-            
-            if (item0.priority.value() < 0 || item1.priority.value() < 0) {
-                return item0.priority.value() > item1.priority.value()
-            }
-            if (item0.date == item1.date) {
-                return item0.priority.value() > item1.priority.value()
-            }
-            else {
-                return item0.date < item1.date
-            }
-        }
     }
     
     // Table functions
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return savedItems.count
+        return itemDataHandler!.savedItems.count
     }
     
+    // Cell data population
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        if let item = itemFromNSManagedObject(savedItems[indexPath.row]) {
+        if let item = itemDataHandler?.itemFromNSManagedObject(row: indexPath.row) {
             guard let cell = tableView.dequeueReusableCell(withIdentifier: "TODOItemViewCell", for: indexPath) as? TODOItemViewCell else {
                 fatalError("Cell is not TODOItemViewCell")
             }
-            
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "MM/dd/yyyy"
             
             cell.itemNameLabel.text = item.itemName
             
@@ -148,7 +82,7 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
             cell.spacerLabel.layer.borderColor = UIColor.darkGray.cgColor
             cell.spacerLabel.layer.borderWidth = 1
             
-            cell.dateLabel.text = dateFormatter.string(from: item.date)
+            cell.dateLabel.text = DateAndTimeDateFormatter.formateDateWithoutTime(item.date)
             cell.dateLabel.backgroundColor = colorForDate(item.date, isCompleted: item.priority == Priority.completed)
             cell.dateLabel.layer.borderColor = UIColor.darkGray.cgColor
             cell.dateLabel.layer.borderWidth = 1
@@ -158,38 +92,40 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
         fatalError("failed getting item from managedObject")
     }
     
+    // row deletion handling
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         if editingStyle == .delete {
-            let item = itemFromNSManagedObject(savedItems[indexPath.row])
+            let item = itemDataHandler?.itemFromNSManagedObject(row: indexPath.row)
             UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [item!.itemName])
-            deleteNSManagedObject(savedItems[indexPath.row], context: managedContext!)
-            savedItems.remove(at: indexPath.row)
+            itemDataHandler!.deleteNSManagedObject(atRow: indexPath.row)
             tableView.deleteRows(at: [indexPath], with: .fade)
         }
         tableView.isEditing = false;
     }
     
+    // swipe right on cell options
     func tableView(_ tableView: UITableView, leadingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration?
     {
-        let item = itemFromNSManagedObject(savedItems[indexPath.row])
+        let item = itemDataHandler!.itemFromNSManagedObject(row: indexPath.row)
         if item?.priority != Priority.completed {
+            
             let addToCalAction = UIContextualAction(style: .normal, title: "Add to Calendar", handler: { (action, view, success) in
                 success(true)
-                self.addToCalButtonPressed(item: self.itemFromNSManagedObject(self.savedItems[indexPath.row])!)
+                self.addToCalButtonPressed(item: item!)
             })
             addToCalAction.backgroundColor = .purple
             
             let setReminderAction = UIContextualAction(style: .normal, title: "Create Reminder", handler: { (action, view, success) in
                 success(true)
-                self.createReminderButtonPressed(item: self.itemFromNSManagedObject(self.savedItems[indexPath.row])!)
+                self.createReminderButtonPressed(item: item!)
             })
             setReminderAction.backgroundColor = .blue
             
             let completeAction = UIContextualAction(style: .normal, title: "Mark Completed", handler: { (action, view, success) in
                 success(true)
-                let updatedItem = self.itemFromNSManagedObject(self.savedItems[indexPath.row])!
+                let updatedItem = item!
                 updatedItem.priority = Priority.completed
-                self.updateItem(atRow: indexPath.row, item: updatedItem)
+                self.itemDataHandler!.saveItem(atRow: indexPath.row, item: updatedItem)
                 self.sort()
             })
             completeAction.backgroundColor = .magenta
@@ -202,9 +138,9 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
         else {
             let markIncompleteAction = UIContextualAction(style: .normal, title: "Mark Incomplete", handler: { (action, view, success) in
                 success(true)
-                let updatedItem = self.itemFromNSManagedObject(self.savedItems[indexPath.row])!
+                let updatedItem = self.itemDataHandler!.itemFromNSManagedObject(row: indexPath.row)!
                 updatedItem.priority = Priority.medium
-                self.updateItem(atRow: indexPath.row, item: updatedItem)
+                self.itemDataHandler!.saveItem(atRow: indexPath.row, item: updatedItem)
                 self.sort()
             })
             markIncompleteAction.backgroundColor = .magenta
@@ -249,7 +185,7 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
     
     // Add to calendar
     func addToCalButtonPressed(item: TODOListItem) {
-        let optionMenu = UIAlertController(title: "Add \(item.itemName) to calendar?", message: "\(item.itemName) will be added as an event at \(formateDate(item.date))?", preferredStyle: .actionSheet)
+        let optionMenu = UIAlertController(title: "Add \(item.itemName) to calendar?", message: "\(item.itemName) will be added as an event at \(DateAndTimeDateFormatter.formateDateWithTime(item.date))?", preferredStyle: .actionSheet)
         
         let addToCalAction = UIAlertAction(title: "Yes", style: .default) {_ in
             self.addEventToCalendar(item: item)
@@ -295,13 +231,6 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
         DispatchQueue.main.asyncAfter(deadline: when) {
             alert.dismiss(animated: true, completion: nil)
         }
-    }
-    
-    func formateDate(_ date: Date) -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "hh:mma - MMMM d, yyyy"
-        
-        return dateFormatter.string(from: date)
     }
     
     // Color functions for cell backgrounds
@@ -364,7 +293,7 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
                 fatalError("The selected cell is not being displayed by the table")
             }
             
-            if let selectedItem = itemFromNSManagedObject(savedItems[indexPath.row]) {
+            if let selectedItem = itemDataHandler!.itemFromNSManagedObject(row: indexPath.row) {
                 itemDetailViewController.item = selectedItem
                 itemDetailViewController.title = selectedItem.itemName
                 
@@ -386,93 +315,26 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
     @IBAction func unwindToItemList(sender: UIStoryboardSegue) {
         if let sourceViewController = sender.source as? ItemViewController, let item = sourceViewController.item {
             if let selectedIndexPath = todoTable.indexPathForSelectedRow {
-                updateItem(atRow: selectedIndexPath.row, item: item)
+                itemDataHandler!.saveItem(atRow: selectedIndexPath.row, item: item)
                 todoTable.reloadRows(at: [selectedIndexPath], with: .none)
             }
             else {
-                let newIndexPath = IndexPath(row: savedItems.count, section: 0)
-                saveItem(item: item)
+                let newIndexPath = IndexPath(row: itemDataHandler!.savedItems.count, section: 0)
+                itemDataHandler!.saveItem(atRow: -1, item: item)
                 
                 todoTable.insertRows(at: [newIndexPath], with: .none)
             }
             sort()
         }
-        else if let sourceViewController = sender.source as? ReminderViewController, let succeded = sourceViewController.success, let failed = sourceViewController.failed {
+        else if let sourceViewController = sender.source as? ReminderViewController, let succeded = sourceViewController.success, let notificationTimeIsInPast = sourceViewController.selectedNotificationTimeIsInThePast {
             print(succeded)
             if succeded {
                 displayCreatedReminderConfimation()
             }
-            else if failed {
+            else if notificationTimeIsInPast {
                 displayCreatedReminderConfimationFailure()
             }
         }
-    }
-    
-    // Core data functions
-    
-    func itemFromNSManagedObject(_ nsObject: NSManagedObject) -> TODOListItem? {
-        
-        guard let itemName = nsObject.value(forKey: "name") as? String else {
-            return nil
-        }
-        guard let date = nsObject.value(forKey: "date") as? Date else {
-            return nil
-        }
-        let itemDescription = nsObject.value(forKey: "itemDescription") as? String ?? ""
-        let priority = nsObject.primitiveValue(forKey: "priority") as! Int
-        
-        return TODOListItem.init(itemName: itemName, itemDescription: itemDescription, priorityInt: priority, date: date)
-    }
-    
-    func saveItem(item: TODOListItem) {
-        let entity = NSEntityDescription.entity(forEntityName: "TODO_Item", in: managedContext!)!
-        
-        let savedItem = NSManagedObject(entity: entity, insertInto: managedContext)
-        
-        savedItem.setValue(item.itemName, forKeyPath: "name")
-        savedItem.setValue(item.date, forKey: "date")
-        savedItem.setValue(item.priority.value(), forKey: "priority")
-        savedItem.setValue(item.itemDescription, forKey: "itemDescription")
-        savedItem.setValue(itemHash(item), forKey: "uniqueID")
-        
-        do {
-            savedItems.append(savedItem)
-            try managedContext!.save()
-        } catch let error as NSError {
-            print("Could not save. \(error), \(error.userInfo)")
-        }
-    }
-    
-    func updateItem(atRow row: Int, item: TODOListItem) {
-        
-        let savedItem = savedItems[row]
-        
-        savedItem.setValue(item.itemName, forKeyPath: "name")
-        savedItem.setValue(item.date, forKey: "date")
-        savedItem.setValue(item.priority.value(), forKey: "priority")
-        savedItem.setValue(item.itemDescription, forKey: "itemDescription")
-        savedItem.setValue(itemHash(item), forKey: "uniqueID")
-        
-        do {
-            try managedContext!.save()
-        } catch let error as NSError {
-            print("Could not save. \(error), \(error.userInfo)")
-        }
-    }
-    
-    func deleteNSManagedObject(_ nsObject: NSManagedObject, context: NSManagedObjectContext) {
-        context.delete(nsObject)
-        do {
-            try context.save()
-        } catch let error as NSError {
-            print("Could not save. \(error), \(error.userInfo)")
-        }
-    }
-    
-    func itemHash(_ item: TODOListItem) -> String {
-        let hash = "\(item.itemName), \(item.itemDescription), \(item.date.description), \(item.priority)"
-        
-        return hash
     }
     
     // Refresh method

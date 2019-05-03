@@ -126,15 +126,16 @@ class TableViewController: UIViewController, UITableViewDataSource {
             
             cell.itemNameLabel.text = item.itemName
             
+            let priorityName = item.priority.name()
+            cell.spacerLabel.text = priorityName.first?.uppercased()
+            cell.spacerLabel.backgroundColor = colorForPriority(item.priority)
+            cell.spacerLabel.layer.borderColor = UIColor.darkGray.cgColor
+            cell.spacerLabel.layer.borderWidth = 1
+            
             cell.dateLabel.text = dateFormatter.string(from: item.date)
             cell.dateLabel.backgroundColor = colorForDate(item.date)
             cell.dateLabel.layer.borderColor = UIColor.darkGray.cgColor
             cell.dateLabel.layer.borderWidth = 1
-            
-            cell.priorityLabel.text = item.priority.name()
-            cell.priorityLabel.backgroundColor = colorForPriority(item.priority)
-            cell.priorityLabel.layer.borderColor = UIColor.darkGray.cgColor
-            cell.priorityLabel.layer.borderWidth = 1
                         
             return cell
         }
@@ -156,11 +157,11 @@ class TableViewController: UIViewController, UITableViewDataSource {
         var color: UIColor
         
         if components.day! < 3 {
-            color = UIColor.init(red: 1, green: 0, blue: 0, alpha: 0.7)
+            color = UIColor.init(red: 1, green: 0, blue: 0, alpha: 0.5)
         } else if components.day! < 7 {
-            color = UIColor.init(red: 1, green: 1, blue: 0, alpha: 0.7)
+            color = UIColor.init(red: 1, green: 1, blue: 0, alpha: 0.45)
         } else {
-            color = UIColor.init(red: 0, green: 1, blue: 0, alpha: 0.7)
+            color = UIColor.init(red: 0, green: 1, blue: 0, alpha: 0.4)
         }
         return color
     }
@@ -168,11 +169,11 @@ class TableViewController: UIViewController, UITableViewDataSource {
     func colorForPriority(_ priority: Priority) -> UIColor {
         var color: UIColor
         if (priority.value() == 2) {
-            color = UIColor.init(red: 1, green: 0, blue: 0, alpha: 0.7)
+            color = UIColor.init(red: 1, green: 0, blue: 0, alpha: 0.5)
         } else if (priority.value() == 1) {
-            color = UIColor.init(red: 1, green: 1, blue: 0, alpha: 0.7)
+            color = UIColor.init(red: 1, green: 1, blue: 0, alpha: 0.45)
         } else {
-            color = UIColor.init(red: 0, green: 1, blue: 0, alpha: 0.7)
+            color = UIColor.init(red: 0, green: 1, blue: 0, alpha: 0.4)
         }
         return color
     }

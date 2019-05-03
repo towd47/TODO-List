@@ -11,8 +11,8 @@ import UIKit
 class TODOItemViewCell: UITableViewCell {
     
     @IBOutlet weak var itemNameLabel: UILabel!
-    @IBOutlet weak var priorityLabel: UILabel!
     @IBOutlet weak var dateLabel: UILabel!
+    @IBOutlet weak var spacerLabel: UILabel!
     
     override func awakeFromNib() {
         super.awakeFromNib()

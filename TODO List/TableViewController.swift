@@ -9,6 +9,7 @@
 import UIKit
 import CoreData
 import EventKit
+import UserNotifications
 
 class TableViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
     
@@ -156,6 +157,8 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
     
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         if editingStyle == .delete {
+            let item = itemFromNSManagedObject(savedItems[indexPath.row])
+            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [item!.itemName])
             deleteNSManagedObject(savedItems[indexPath.row], context: managedContext!)
             savedItems.remove(at: indexPath.row)
             tableView.deleteRows(at: [indexPath], with: .fade)

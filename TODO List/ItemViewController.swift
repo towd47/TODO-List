@@ -112,7 +112,30 @@ class ItemViewController: UIViewController, UITextFieldDelegate {
         }
     }
     @IBAction func addToCalendarButtonPressed(_ sender: Any) {
-        addEventToCalendar()
+        updateItem()
+
+        let optionMenu = UIAlertController(title: "Add \(item?.itemName ?? "Item") to calendar?", message: "\(item?.itemName ?? "Item") will be added as an event at \(formateDate(item!.date))?", preferredStyle: .actionSheet)
+        
+        let addToCalAction = UIAlertAction(title: "Yes", style: .default) {_ in
+            self.addEventToCalendar()
+            self.displayAddedConfimation()
+        }
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
+        
+        optionMenu.addAction(addToCalAction)
+        optionMenu.addAction(cancelAction)
+        
+        self.present(optionMenu, animated: true, completion: nil)
+    }
+    
+    func displayAddedConfimation() {
+        let alert = UIAlertController(title: "Added to Calendar", message: "", preferredStyle: .alert)
+        self.present(alert, animated: true, completion: nil)
+        
+        let when = DispatchTime.now() + 1.5
+        DispatchQueue.main.asyncAfter(deadline: when) {
+            alert.dismiss(animated: true, completion: nil)
+        }
     }
     
     func addEventToCalendar(completion: ((_ success: Bool, _ error: NSError?) -> Void)? = nil) {

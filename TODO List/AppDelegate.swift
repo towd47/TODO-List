@@ -8,15 +8,27 @@
 
 import UIKit
 import CoreData
+import UserNotifications
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
-
+    let notificationHandler = NotificationHandler()
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        UNUserNotificationCenter.current()
+            .requestAuthorization(options: [.alert, .sound, .badge]) {
+                (accepted, error) in
+                if !accepted {
+                    print("User doesn't allow pop up notification")
+                }
+        }
+        
+        //add response handler with customized category (Shihong)
+        registerNotificationCategory()
+        UNUserNotificationCenter.current().delegate = notificationHandler
         return true
     }
 
@@ -42,6 +54,23 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
         // Saves changes in the application's managed object context before the application terminates.
         self.saveContext()
+    }
+    
+    private func registerNotificationCategory(){
+        let newCatagory: UNNotificationCategory = {
+            let viewAction = UNTextInputNotificationAction(identifier: NotificationCategoryAction.view.rawValue, title: "View", options: [.foreground], textInputButtonTitle: "Send", textInputPlaceholder: "Leave what you want to say")
+            
+            let completeAction = UNNotificationAction(identifier: NotificationCategoryAction.complete.rawValue, title: "Complete", options: [.foreground])
+            
+            
+            return UNNotificationCategory(identifier: NotificationCategory.news.rawValue, actions: [viewAction,completeAction], intentIdentifiers: [], options: [.customDismissAction])
+        }()
+        
+        let reveal = UNNotificationAction(identifier: "reveal", title: "Reveal", options: [.foreground])
+        
+        let pokemonCategory = UNNotificationCategory(identifier: "POKEMON", actions: [reveal], intentIdentifiers: [], options: [])
+        
+        UNUserNotificationCenter.current().setNotificationCategories([newCatagory, pokemonCategory])
     }
 
     // MARK: - Core Data stack

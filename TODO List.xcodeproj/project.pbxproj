@@ -16,6 +16,8 @@
 		EE53EF68227A7DEA0051A8DA /* TODOListItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE53EF67227A7DEA0051A8DA /* TODOListItem.swift */; };
 		EE53EF6C227B4CBE0051A8DA /* TODOItemViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE53EF6B227B4CBE0051A8DA /* TODOItemViewCell.swift */; };
 		EE53EF6E227B5D850051A8DA /* ItemViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE53EF6D227B5D850051A8DA /* ItemViewController.swift */; };
+		EEB4C00D227C3F4B00E0D30C /* ReminderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEB4C00C227C3F4B00E0D30C /* ReminderViewController.swift */; };
+		EEB4C00F227C4AA600E0D30C /* NotificationHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEB4C00E227C4AA600E0D30C /* NotificationHandler.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +32,8 @@
 		EE53EF67227A7DEA0051A8DA /* TODOListItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TODOListItem.swift; sourceTree = "<group>"; };
 		EE53EF6B227B4CBE0051A8DA /* TODOItemViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TODOItemViewCell.swift; sourceTree = "<group>"; };
 		EE53EF6D227B5D850051A8DA /* ItemViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemViewController.swift; sourceTree = "<group>"; };
+		EEB4C00C227C3F4B00E0D30C /* ReminderViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderViewController.swift; sourceTree = "<group>"; };
+		EEB4C00E227C4AA600E0D30C /* NotificationHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationHandler.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -63,10 +67,12 @@
 			isa = PBXGroup;
 			children = (
 				EE53EF52227A6C230051A8DA /* AppDelegate.swift */,
+				EEB4C00E227C4AA600E0D30C /* NotificationHandler.swift */,
 				EE53EF54227A6C230051A8DA /* TableViewController.swift */,
 				EE53EF6B227B4CBE0051A8DA /* TODOItemViewCell.swift */,
 				EE53EF67227A7DEA0051A8DA /* TODOListItem.swift */,
 				EE53EF56227A6C230051A8DA /* Main.storyboard */,
+				EEB4C00C227C3F4B00E0D30C /* ReminderViewController.swift */,
 				EE53EF6D227B5D850051A8DA /* ItemViewController.swift */,
 				EE53EF5C227A6C240051A8DA /* Assets.xcassets */,
 				EE53EF5E227A6C240051A8DA /* LaunchScreen.storyboard */,
@@ -148,7 +154,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				EE53EF6C227B4CBE0051A8DA /* TODOItemViewCell.swift in Sources */,
+				EEB4C00F227C4AA600E0D30C /* NotificationHandler.swift in Sources */,
 				EE53EF55227A6C230051A8DA /* TableViewController.swift in Sources */,
+				EEB4C00D227C3F4B00E0D30C /* ReminderViewController.swift in Sources */,
 				EE53EF53227A6C230051A8DA /* AppDelegate.swift in Sources */,
 				EE53EF68227A7DEA0051A8DA /* TODOListItem.swift in Sources */,
 				EE53EF5B227A6C230051A8DA /* TODO_List.xcdatamodeld in Sources */,

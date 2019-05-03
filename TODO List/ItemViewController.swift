@@ -16,7 +16,6 @@ class ItemViewController: UIViewController, UITextFieldDelegate {
     @IBOutlet weak var descriptionTextView: UITextView!
     @IBOutlet weak var prioritySelector: UISegmentedControl!
     @IBOutlet weak var saveButton: UIBarButtonItem!
-    @IBOutlet weak var reminderDatePickerField: UITextField!
     
     private var datePicker: UIDatePicker?
     
@@ -33,13 +32,20 @@ class ItemViewController: UIViewController, UITextFieldDelegate {
         datePicker?.datePickerMode = .dateAndTime
         datePicker?.minuteInterval = 15
         datePicker?.addTarget(self, action: #selector(ItemViewController.dateChanged(datePicker:)), for: .valueChanged)
+        datePicker?.setDate(Date(), animated: false)
         
         dateField.inputView = datePicker
         
         if let item = item {
             nameTextField.text = item.itemName
             dateField.text = formateDate(item.date)
-            prioritySelector.selectedSegmentIndex = item.priority.value()
+            
+            var priorityVal = item.priority.value()
+            if priorityVal == -1 {
+                priorityVal = 3
+            }
+            prioritySelector.selectedSegmentIndex = priorityVal
+            
             descriptionTextView.text = item.itemDescription
             
             datePicker?.setDate(item.date, animated: false)
@@ -86,7 +92,10 @@ class ItemViewController: UIViewController, UITextFieldDelegate {
     func updateItem() {
         let name = nameTextField.text ?? ""
         let itemDescription = descriptionTextView.text ?? ""
-        let priority = prioritySelector.selectedSegmentIndex
+        var priority = prioritySelector.selectedSegmentIndex
+        if priority == 3 {
+            priority = -1
+        }
         let date = datePicker?.date
         
         item = TODOListItem.init(itemName: name, itemDescription: itemDescription, priorityInt: priority, date: date!)
@@ -100,69 +109,16 @@ class ItemViewController: UIViewController, UITextFieldDelegate {
     }
     
     @IBAction func cancel(_ sender: UIBarButtonItem) {
-        // Depending on style of presentation (modal or push presentation), this view controller needs to be dismissed in two different ways.
-        let isPresentingInAddMealMode = presentingViewController is UINavigationController
+        let isPresentingInAddItemMode = presentingViewController is UINavigationController
         
-        if isPresentingInAddMealMode {
+        if isPresentingInAddItemMode {
             dismiss(animated: true, completion: nil)
         }
         else if let owningNavigationController = navigationController{
             owningNavigationController.popViewController(animated: true)
         }
         else {
-            fatalError("The MealViewController is not inside a navigation controller.")
+            fatalError("The ItemViewController is not inside a navigation controller.")
         }
-    }
-    @IBAction func addToCalendarButtonPressed(_ sender: Any) {
-        updateItem()
-
-        let optionMenu = UIAlertController(title: "Add \(item?.itemName ?? "Item") to calendar?", message: "\(item?.itemName ?? "Item") will be added as an event at \(formateDate(item!.date))?", preferredStyle: .actionSheet)
-        
-        let addToCalAction = UIAlertAction(title: "Yes", style: .default) {_ in
-            self.addEventToCalendar()
-            self.displayAddedConfimation()
-        }
-        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
-        
-        optionMenu.addAction(addToCalAction)
-        optionMenu.addAction(cancelAction)
-        
-        self.present(optionMenu, animated: true, completion: nil)
-    }
-    
-    func displayAddedConfimation() {
-        let alert = UIAlertController(title: "Added to Calendar", message: "", preferredStyle: .alert)
-        self.present(alert, animated: true, completion: nil)
-        
-        let when = DispatchTime.now() + 1.5
-        DispatchQueue.main.asyncAfter(deadline: when) {
-            alert.dismiss(animated: true, completion: nil)
-        }
-    }
-    
-    func addEventToCalendar(completion: ((_ success: Bool, _ error: NSError?) -> Void)? = nil) {
-        updateItem()
-        let eventStore = EKEventStore()
-        
-        eventStore.requestAccess(to: .event, completion: { (granted, error) in
-            if (granted) && (error == nil) {
-                let event = EKEvent(eventStore: eventStore)
-                event.title = self.item?.itemName
-                event.startDate = self.item?.date
-                event.endDate = self.item?.date.addingTimeInterval(3600)
-                event.notes = self.item?.itemDescription
-                event.calendar = eventStore.defaultCalendarForNewEvents
-                do {
-                    try eventStore.save(event, span: .thisEvent)
-                } catch let e as NSError {
-                    completion?(false, e)
-                    print(e)
-                    return
-                }
-                completion?(true, nil)
-            } else {
-                completion?(false, error as NSError?)
-            }
-        })
     }
 }

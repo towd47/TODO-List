@@ -14,10 +14,12 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
     
     @IBOutlet weak var todoTable: UITableView!
     @IBOutlet weak var sortButton: UIBarButtonItem!
+    @IBOutlet weak var reminderSegue: UIButton!
     
     var savedItems: [NSManagedObject] = []
     var managedContext: NSManagedObjectContext?
     var sortedBy: String = "Priority"
+    var itemToMakeReminderFor: TODOListItem?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -27,7 +29,14 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
         todoTable.rowHeight = 90
         todoTable.delegate = self
         
+        reminderSegue.isHidden = true
+        
         populateSavedItems()
+        
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        UIApplication.shared.applicationIconBadgeNumber = 0
     }
     
     func populateSavedItems() {
@@ -166,7 +175,7 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
             
             let setReminderAction = UIContextualAction(style: .normal, title: "Create Reminder", handler: { (action, view, success) in
                 success(true)
-                
+                self.createReminderButtonPressed(item: self.itemFromNSManagedObject(self.savedItems[indexPath.row])!)
             })
             setReminderAction.backgroundColor = .blue
             
@@ -179,8 +188,10 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
             })
             completeAction.backgroundColor = .magenta
             
+            let actionsConfiguration = UISwipeActionsConfiguration(actions: [completeAction, addToCalAction, setReminderAction])
+            actionsConfiguration.performsFirstActionWithFullSwipe = false
             
-            return UISwipeActionsConfiguration(actions: [completeAction, addToCalAction, setReminderAction])
+            return actionsConfiguration
         }
         else {
             let markIncompleteAction = UIContextualAction(style: .normal, title: "Mark Incomplete", handler: { (action, view, success) in
@@ -196,6 +207,39 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
         }
     }
     
+    
+    // Reminder setup and creation
+    
+    func createReminderButtonPressed(item: TODOListItem) {
+        itemToMakeReminderFor = item
+        performSegue(withIdentifier: "CreateReminder", sender: nil)
+    }
+    
+    func displayCreatedReminderConfimation() {
+        let alert = UIAlertController(title: "Created Reminder for \(String(describing: itemToMakeReminderFor!.itemName))", message: "", preferredStyle: .alert)
+        
+        let when = DispatchTime.now() + 1
+        DispatchQueue.main.asyncAfter(deadline: when) {
+            self.present(alert, animated: true, completion: nil)
+            let when = DispatchTime.now() + 1.5
+            DispatchQueue.main.asyncAfter(deadline: when) {
+                alert.dismiss(animated: true, completion: nil)
+            }
+        }        
+    }
+    
+    func displayCreatedReminderConfimationFailure() {
+        let alert = UIAlertController(title: "Reminder Failed", message: "Make sure the reminder is set to a time in the future.", preferredStyle: .alert)
+        
+        let when = DispatchTime.now() + 1
+        DispatchQueue.main.asyncAfter(deadline: when) {
+            self.present(alert, animated: true, completion: nil)
+            let when = DispatchTime.now() + 1.5
+            DispatchQueue.main.asyncAfter(deadline: when) {
+                alert.dismiss(animated: true, completion: nil)
+            }
+        }
+    }
     
     // Add to calendar
     func addToCalButtonPressed(item: TODOListItem) {
@@ -228,7 +272,6 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
                     try eventStore.save(event, span: .thisEvent)
                 } catch let e as NSError {
                     completion?(false, e)
-                    print(e)
                     return
                 }
                 completion?(true, nil)
@@ -299,7 +342,7 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
         switch(segue.identifier ?? "") {
         
         case "AddItem":
-            print("adding item")
+            print("Adding item")
             
         case "ShowDetail":
             guard let itemDetailViewController = segue.destination as? ItemViewController else {
@@ -320,12 +363,20 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
                 
             }
             
+        case "CreateReminder":
+            guard let reminderViewController = segue.destination as? ReminderViewController else {
+                fatalError("Unexpected destination: \(segue.destination)")
+            }
+            reminderViewController.item = self.itemToMakeReminderFor
+            
+            
+            
         default:
             fatalError("Unexpected Segue Identifier; \(String(describing: segue.identifier))")
         }
     }
     
-    @IBAction func unwindToMealList(sender: UIStoryboardSegue) {
+    @IBAction func unwindToItemList(sender: UIStoryboardSegue) {
         if let sourceViewController = sender.source as? ItemViewController, let item = sourceViewController.item {
             if let selectedIndexPath = todoTable.indexPathForSelectedRow {
                 updateItem(atRow: selectedIndexPath.row, item: item)
@@ -338,6 +389,15 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
                 todoTable.insertRows(at: [newIndexPath], with: .none)
             }
             sort()
+        }
+        else if let sourceViewController = sender.source as? ReminderViewController, let succeded = sourceViewController.success, let failed = sourceViewController.failed {
+            print(succeded)
+            if succeded {
+                displayCreatedReminderConfimation()
+            }
+            else if failed {
+                displayCreatedReminderConfimationFailure()
+            }
         }
     }
     
@@ -370,7 +430,6 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
         do {
             savedItems.append(savedItem)
             try managedContext!.save()
-            print("saved")
         } catch let error as NSError {
             print("Could not save. \(error), \(error.userInfo)")
         }
@@ -387,7 +446,6 @@ class TableViewController: UIViewController, UITableViewDataSource, UITableViewD
         
         do {
             try managedContext!.save()
-            print("saved")
         } catch let error as NSError {
             print("Could not save. \(error), \(error.userInfo)")
         }

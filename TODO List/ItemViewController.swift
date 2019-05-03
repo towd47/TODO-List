@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import EventKit
 
 class ItemViewController: UIViewController, UITextFieldDelegate {
     
@@ -28,7 +29,7 @@ class ItemViewController: UIViewController, UITextFieldDelegate {
         descriptionTextView.layer.borderColor = UIColor.lightGray.cgColor
         
         datePicker = UIDatePicker()
-        datePicker?.datePickerMode = .date
+        datePicker?.datePickerMode = .dateAndTime
         datePicker?.addTarget(self, action: #selector(ItemViewController.dateChanged(datePicker:)), for: .valueChanged)
         
         dateField.inputView = datePicker
@@ -77,6 +78,10 @@ class ItemViewController: UIViewController, UITextFieldDelegate {
             return
         }
         
+        updateItem()
+    }
+    
+    func updateItem() {
         let name = nameTextField.text ?? ""
         let itemDescription = descriptionTextView.text ?? ""
         let priority = prioritySelector.selectedSegmentIndex
@@ -87,7 +92,7 @@ class ItemViewController: UIViewController, UITextFieldDelegate {
     
     func formateDate(_ date: Date) -> String {
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMMM d, yyyy"
+        dateFormatter.dateFormat = "hh:mma - MMMM d, yyyy"
         
         return dateFormatter.string(from: date)
     }
@@ -105,5 +110,39 @@ class ItemViewController: UIViewController, UITextFieldDelegate {
         else {
             fatalError("The MealViewController is not inside a navigation controller.")
         }
+    }
+    @IBAction func addToCalendarButtonPressed(_ sender: Any) {
+        addEventToCalendar()
+    }
+    
+    func addEventToCalendar(completion: ((_ success: Bool, _ error: NSError?) -> Void)? = nil) {
+        updateItem()
+        let eventStore = EKEventStore()
+        
+        print("TEST1")
+        eventStore.requestAccess(to: .event, completion: { (granted, error) in
+            if (granted) && (error == nil) {
+                print("TEST2")
+                let event = EKEvent(eventStore: eventStore)
+                event.title = self.item?.itemName
+                event.startDate = self.item?.date
+                event.endDate = self.item?.date.addingTimeInterval(3600)
+                event.notes = self.item?.itemDescription
+                event.calendar = eventStore.defaultCalendarForNewEvents
+                do {
+                    try eventStore.save(event, span: .thisEvent)
+                    print("added event")
+                } catch let e as NSError {
+                    completion?(false, e)
+                    print(e)
+                    return
+                }
+                completion?(true, nil)
+                print(true)
+            } else {
+                completion?(false, error as NSError?)
+                print("TEST3")
+            }
+        })
     }
 }

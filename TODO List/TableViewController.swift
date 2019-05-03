@@ -8,8 +8,9 @@
 
 import UIKit
 import CoreData
+import EventKit
 
-class TableViewController: UIViewController, UITableViewDataSource {
+class TableViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
     
     @IBOutlet weak var todoTable: UITableView!
     @IBOutlet weak var sortButton: UIBarButtonItem!
@@ -23,7 +24,8 @@ class TableViewController: UIViewController, UITableViewDataSource {
         
         title = "TODO List"
         
-        todoTable.rowHeight = 90;
+        todoTable.rowHeight = 90
+        todoTable.delegate = self
         
         populateSavedItems()
     }
@@ -97,6 +99,9 @@ class TableViewController: UIViewController, UITableViewDataSource {
             let item0 = itemFromNSManagedObject($0)!
             let item1 = itemFromNSManagedObject($1)!
             
+            if (item0.priority.value() < 0 || item1.priority.value() < 0) {
+                return item0.priority.value() > item1.priority.value()
+            }
             if (item0.date == item1.date) {
                 return item0.priority.value() > item1.priority.value()
             }
@@ -108,13 +113,11 @@ class TableViewController: UIViewController, UITableViewDataSource {
     
     // Table functions
     
-    func tableView(_ tableView: UITableView,
-                   numberOfRowsInSection section: Int) -> Int {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return savedItems.count
     }
     
-    func tableView(_ tableView: UITableView,
-                   cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         if let item = itemFromNSManagedObject(savedItems[indexPath.row]) {
             guard let cell = tableView.dequeueReusableCell(withIdentifier: "TODOItemViewCell", for: indexPath) as? TODOItemViewCell else {
@@ -133,13 +136,13 @@ class TableViewController: UIViewController, UITableViewDataSource {
             cell.spacerLabel.layer.borderWidth = 1
             
             cell.dateLabel.text = dateFormatter.string(from: item.date)
-            cell.dateLabel.backgroundColor = colorForDate(item.date)
+            cell.dateLabel.backgroundColor = colorForDate(item.date, isCompleted: item.priority == Priority.completed)
             cell.dateLabel.layer.borderColor = UIColor.darkGray.cgColor
             cell.dateLabel.layer.borderWidth = 1
                         
             return cell
         }
-        fatalError("faild getting item from managedObject")
+        fatalError("failed getting item from managedObject")
     }
     
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
@@ -148,15 +151,123 @@ class TableViewController: UIViewController, UITableViewDataSource {
             savedItems.remove(at: indexPath.row)
             tableView.deleteRows(at: [indexPath], with: .fade)
         }
+        tableView.isEditing = false;
     }
     
-    func colorForDate(_ date: Date) -> UIColor {
+    func tableView(_ tableView: UITableView, leadingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration?
+    {
+        let item = itemFromNSManagedObject(savedItems[indexPath.row])
+        if item?.priority != Priority.completed {
+            let addToCalAction = UIContextualAction(style: .normal, title: "Add to Calendar", handler: { (action, view, success) in
+                success(true)
+                self.addToCalButtonPressed(item: self.itemFromNSManagedObject(self.savedItems[indexPath.row])!)
+            })
+            addToCalAction.backgroundColor = .purple
+            
+            let setReminderAction = UIContextualAction(style: .normal, title: "Create Reminder", handler: { (action, view, success) in
+                success(true)
+                
+            })
+            setReminderAction.backgroundColor = .blue
+            
+            let completeAction = UIContextualAction(style: .normal, title: "Mark Completed", handler: { (action, view, success) in
+                success(true)
+                let updatedItem = self.itemFromNSManagedObject(self.savedItems[indexPath.row])!
+                updatedItem.priority = Priority.completed
+                self.updateItem(atRow: indexPath.row, item: updatedItem)
+                self.sort()
+            })
+            completeAction.backgroundColor = .magenta
+            
+            
+            return UISwipeActionsConfiguration(actions: [completeAction, addToCalAction, setReminderAction])
+        }
+        else {
+            let markIncompleteAction = UIContextualAction(style: .normal, title: "Mark Incomplete", handler: { (action, view, success) in
+                success(true)
+                let updatedItem = self.itemFromNSManagedObject(self.savedItems[indexPath.row])!
+                updatedItem.priority = Priority.medium
+                self.updateItem(atRow: indexPath.row, item: updatedItem)
+                self.sort()
+            })
+            markIncompleteAction.backgroundColor = .magenta
+            
+            return UISwipeActionsConfiguration(actions: [markIncompleteAction])
+        }
+    }
+    
+    
+    // Add to calendar
+    func addToCalButtonPressed(item: TODOListItem) {
+        let optionMenu = UIAlertController(title: "Add \(item.itemName) to calendar?", message: "\(item.itemName) will be added as an event at \(formateDate(item.date))?", preferredStyle: .actionSheet)
+        
+        let addToCalAction = UIAlertAction(title: "Yes", style: .default) {_ in
+            self.addEventToCalendar(item: item)
+            self.displayAddedConfimation()
+        }
+        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
+        
+        optionMenu.addAction(addToCalAction)
+        optionMenu.addAction(cancelAction)
+        
+        self.present(optionMenu, animated: true, completion: nil)
+    }
+    
+    func addEventToCalendar(item: TODOListItem, completion: ((_ success: Bool, _ error: NSError?) -> Void)? = nil) {
+        let eventStore = EKEventStore()
+        
+        eventStore.requestAccess(to: .event, completion: { (granted, error) in
+            if (granted) && (error == nil) {
+                let event = EKEvent(eventStore: eventStore)
+                event.title = item.itemName
+                event.startDate = item.date
+                event.endDate = item.date.addingTimeInterval(3600)
+                event.notes = item.itemDescription
+                event.calendar = eventStore.defaultCalendarForNewEvents
+                do {
+                    try eventStore.save(event, span: .thisEvent)
+                } catch let e as NSError {
+                    completion?(false, e)
+                    print(e)
+                    return
+                }
+                completion?(true, nil)
+            } else {
+                completion?(false, error as NSError?)
+            }
+        })
+    }
+    
+    func displayAddedConfimation() {
+        let alert = UIAlertController(title: "Added to Calendar", message: "", preferredStyle: .alert)
+        self.present(alert, animated: true, completion: nil)
+        
+        let when = DispatchTime.now() + 1.5
+        DispatchQueue.main.asyncAfter(deadline: when) {
+            alert.dismiss(animated: true, completion: nil)
+        }
+    }
+    
+    func formateDate(_ date: Date) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "hh:mma - MMMM d, yyyy"
+        
+        return dateFormatter.string(from: date)
+    }
+    
+    // Color functions for cell backgrounds
+    
+    func colorForDate(_ date: Date, isCompleted: Bool) -> UIColor {
         let todayDate = Date.init()
         let components = Calendar.current.dateComponents([.day], from: todayDate, to: date)
         
         var color: UIColor
         
-        if components.day! < 3 {
+        
+        if isCompleted {
+            color = UIColor.init(red: 0, green: 0, blue: 1, alpha: 0.5)
+        }
+        else if components.day! < 3 {
             color = UIColor.init(red: 1, green: 0, blue: 0, alpha: 0.5)
         } else if components.day! < 7 {
             color = UIColor.init(red: 1, green: 1, blue: 0, alpha: 0.45)
@@ -172,8 +283,10 @@ class TableViewController: UIViewController, UITableViewDataSource {
             color = UIColor.init(red: 1, green: 0, blue: 0, alpha: 0.5)
         } else if (priority.value() == 1) {
             color = UIColor.init(red: 1, green: 1, blue: 0, alpha: 0.45)
-        } else {
+        } else if (priority.value() == 0){
             color = UIColor.init(red: 0, green: 1, blue: 0, alpha: 0.4)
+        } else {
+            color = UIColor.init(red: 0, green: 0, blue: 1, alpha: 0.5)
         }
         return color
     }
@@ -204,6 +317,7 @@ class TableViewController: UIViewController, UITableViewDataSource {
             if let selectedItem = itemFromNSManagedObject(savedItems[indexPath.row]) {
                 itemDetailViewController.item = selectedItem
                 itemDetailViewController.title = selectedItem.itemName
+                
             }
             
         default:

@@ -16,6 +16,7 @@ class ItemViewController: UIViewController, UITextFieldDelegate {
     @IBOutlet weak var descriptionTextView: UITextView!
     @IBOutlet weak var prioritySelector: UISegmentedControl!
     @IBOutlet weak var saveButton: UIBarButtonItem!
+    @IBOutlet weak var reminderDatePickerField: UITextField!
     
     private var datePicker: UIDatePicker?
     
@@ -24,12 +25,13 @@ class ItemViewController: UIViewController, UITextFieldDelegate {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+                
         descriptionTextView.layer.borderWidth = 1
         descriptionTextView.layer.borderColor = UIColor.lightGray.cgColor
         
         datePicker = UIDatePicker()
         datePicker?.datePickerMode = .dateAndTime
+        datePicker?.minuteInterval = 15
         datePicker?.addTarget(self, action: #selector(ItemViewController.dateChanged(datePicker:)), for: .valueChanged)
         
         dateField.inputView = datePicker
@@ -142,10 +144,8 @@ class ItemViewController: UIViewController, UITextFieldDelegate {
         updateItem()
         let eventStore = EKEventStore()
         
-        print("TEST1")
         eventStore.requestAccess(to: .event, completion: { (granted, error) in
             if (granted) && (error == nil) {
-                print("TEST2")
                 let event = EKEvent(eventStore: eventStore)
                 event.title = self.item?.itemName
                 event.startDate = self.item?.date
@@ -154,17 +154,14 @@ class ItemViewController: UIViewController, UITextFieldDelegate {
                 event.calendar = eventStore.defaultCalendarForNewEvents
                 do {
                     try eventStore.save(event, span: .thisEvent)
-                    print("added event")
                 } catch let e as NSError {
                     completion?(false, e)
                     print(e)
                     return
                 }
                 completion?(true, nil)
-                print(true)
             } else {
                 completion?(false, error as NSError?)
-                print("TEST3")
             }
         })
     }

@@ -36,6 +36,7 @@ enum Priority: Int {
     case low = 0
     case medium = 1
     case high = 2
+    case completed = -1
     
     func name() -> String {
         if self == Priority.low {
@@ -43,6 +44,9 @@ enum Priority: Int {
         }
         else if self == Priority.medium {
             return "medium"
+        }
+        else if self == Priority.completed {
+            return "completed"
         }
         else {
             return "high"

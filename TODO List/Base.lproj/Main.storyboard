@@ -96,6 +96,11 @@
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                     </view>
                     <navigationItem key="navigationItem" id="m2A-Dd-gTd">
+                        <barButtonItem key="leftBarButtonItem" title="Sorted by: Priority" id="zOU-HF-35L">
+                            <connections>
+                                <action selector="sortButtonPressed:" destination="BYZ-38-t0r" id="UKm-PN-rza"/>
+                            </connections>
+                        </barButtonItem>
                         <barButtonItem key="rightBarButtonItem" systemItem="add" id="jGk-yj-aog">
                             <connections>
                                 <action selector="addTODOItem:" destination="BYZ-38-t0r" id="w8C-d8-08O"/>
@@ -104,6 +109,7 @@
                         </barButtonItem>
                     </navigationItem>
                     <connections>
+                        <outlet property="sortButton" destination="zOU-HF-35L" id="mef-hp-XFN"/>
                         <outlet property="todoTable" destination="OYX-xM-1X1" id="1z5-Z0-kVd"/>
                     </connections>
                 </viewController>

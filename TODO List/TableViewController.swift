@@ -12,9 +12,11 @@ import CoreData
 class TableViewController: UIViewController, UITableViewDataSource {
     
     @IBOutlet weak var todoTable: UITableView!
+    @IBOutlet weak var sortButton: UIBarButtonItem!
     
     var savedItems: [NSManagedObject] = []
     var managedContext: NSManagedObjectContext?
+    var sortedBy: String = "Priority"
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -49,10 +51,32 @@ class TableViewController: UIViewController, UITableViewDataSource {
             print("Could not fetch. \(error), \(error.userInfo)")
         }
         
-        sortByPriority()
+        sort()
     }
     
     // List Sorting
+    
+    @IBAction func sortButtonPressed(_ sender: Any) {
+        if sortedBy == "Priority" {
+            sortedBy = "Date"
+        }
+        else {
+            sortedBy = "Priority"
+        }
+        sortButton.title = "Sorted by: \(sortedBy)"
+        sort()
+    }
+    
+    func sort() {
+        if sortedBy == "Priority" {
+            sortByPriority()
+        }
+        else {
+            sortByDate()
+        }
+        
+        todoTable.reloadData()
+    }
     
     func sortByPriority() {
         savedItems.sort {
@@ -198,6 +222,7 @@ class TableViewController: UIViewController, UITableViewDataSource {
                 
                 todoTable.insertRows(at: [newIndexPath], with: .none)
             }
+            sort()
         }
     }
     
